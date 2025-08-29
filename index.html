@@ -3,27 +3,95 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity WebGL Player | FlappyBird</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>FlappyBird</title>
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
-  </head>
-  <body>
-    <div id="unity-container" class="unity-desktop">
-      <canvas id="unity-canvas" width=100% height=100%></canvas>
-      <div id="unity-loading-bar">
-        <div id="unity-logo"></div>
-        <div id="unity-progress-bar-empty">
-          <div id="unity-progress-bar-full"></div>
-        </div>
-      </div>
-      <div id="unity-warning"> </div>
-      <div id="unity-footer">
-        <div id="unity-webgl-logo"></div>
-        <div id="unity-fullscreen-button"></div>
-        <div id="unity-build-title">FlappyBird</div>
-      </div>
-    </div>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: #000;
+        touch-action: none;
+        -webkit-tap-highlight-color: transparent;
+        position: fixed;
+        width: 100%;
+        height: 100%;
+      }
+      
+      #unity-container {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #000;
+      }
+      
+      #unity-canvas {
+        width: 100% !important;
+        height: 100% !important;
+        position: fixed;
+        top: 0;
+        left: 0;
+      }
+      
+      #unity-loading-bar {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1000;
+      }
+      
+      #unity-warning {
+        display: none !important;
+      }
+      
+      #unity-footer {
+        display: none !important;
+      }
+      
+      /* Скрываем скроллбары */
+      ::-webkit-scrollbar {
+        display: none;
+      }
+      
+      /* Убираем синий highlight при тапе на мобильных */
+      * {
+        -webkit-tap-highlight-color: transparent;
+      }
+    </style>
     <script>
+      // Инициализация Telegram Web App
+      let tg = window.Telegram.WebApp;
+      
+      // Настраиваем WebApp при загрузке
+      document.addEventListener('DOMContentLoaded', function() {
+        // Расширяем на весь экран
+        tg.expand();
+        
+        // Устанавливаем черный цвет для header и фона
+        tg.setHeaderColor('#000000');
+        tg.setBackgroundColor('#000000');
+        
+        // Скрываем кнопку назад если не нужна
+        tg.BackButton.hide();
+        
+        // Включаем подтверждение закрытия
+        tg.enableClosingConfirmation();
+        
+        console.log("Telegram WebApp initialized");
+      });
+
       var container = document.querySelector("#unity-container");
       var canvas = document.querySelector("#unity-canvas");
       var loadingBar = document.querySelector("#unity-loading-bar");
@@ -31,12 +99,6 @@
       var fullscreenButton = document.querySelector("#unity-fullscreen-button");
       var warningBanner = document.querySelector("#unity-warning");
 
-      // Shows a temporary message banner/ribbon for a few seconds, or
-      // a permanent error message on top of the canvas if type=='error'.
-      // If type=='warning', a yellow highlight color is used.
-      // Modify or remove this function to customize the visually presented
-      // way that non-critical warnings and error messages are presented to the
-      // user.
       function unityShowBanner(msg, type) {
         function updateBannerVisibility() {
           warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
@@ -68,36 +130,40 @@
         showBanner: unityShowBanner,
       };
 
-      // By default Unity keeps WebGL canvas render target size matched with
-      // the DOM size of the canvas element (scaled by window.devicePixelRatio)
-      // Set this to false if you want to decouple this synchronization from
-      // happening inside the engine, and you would instead like to size up
-      // the canvas DOM size and WebGL render target sizes yourself.
-      // config.matchWebGLToCanvasSize = false;
-
+      // Для мобильных устройств
       if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        // Mobile device style: fill the whole browser client area with the game canvas:
-
-        var meta = document.createElement('meta');
-        meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
-        document.getElementsByTagName('head')[0].appendChild(meta);
         container.className = "unity-mobile";
-
-        // To lower canvas resolution on mobile devices to gain some
-        // performance, uncomment the following line:
-        // config.devicePixelRatio = 1;
-
-        canvas.style.width = window.innerWidth + 'px';
-        canvas.style.height = window.innerHeight + 'px';
-
-        //unityShowBanner('WebGL builds are not supported on mobile devices.');
+        
+        // Устанавливаем размеры canvas равными размерам экрана
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
+        
+        // Оптимизация для производительности
+        config.devicePixelRatio = Math.min(1.5, window.devicePixelRatio || 1);
+        
+        // Предотвращаем масштабирование при двойном тапе
+        document.addEventListener('dblclick', function(e) {
+          e.preventDefault();
+        }, { passive: false });
+        
       } else {
-        // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
-
+        // Для десктопа
         canvas.style.width = "100%";
         canvas.style.height = "100%";
       }
+
+      // Предотвращаем стандартное поведение жестов
+      document.addEventListener('touchstart', function(e) {
+        if (e.touches.length > 1) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      document.addEventListener('touchmove', function(e) {
+        if (e.touches.length > 1) {
+          e.preventDefault();
+        }
+      }, { passive: false });
 
       loadingBar.style.display = "block";
 
@@ -108,14 +174,52 @@
           progressBarFull.style.width = 100 * progress + "%";
         }).then((unityInstance) => {
           loadingBar.style.display = "none";
+          
+          // Скрываем кнопку полноэкранного режима, так как в WebApp он не нужен
+          if (fullscreenButton) {
+            fullscreenButton.style.display = 'none';
+          }
+          
+          // Обработчик для полноэкранного режима (если все же нужен)
           fullscreenButton.onclick = () => {
             unityInstance.SetFullscreen(1);
           };
+          
+          // Уведомляем Telegram WebApp что игра загружена
+          setTimeout(() => {
+            tg.ready();
+            console.log("Unity game loaded successfully");
+          }, 1000);
+          
         }).catch((message) => {
-          alert(message);
+          console.error("Unity loading error:", message);
+          unityShowBanner('Ошибка загрузки игры: ' + message, 'error');
         });
       };
+      
+      script.onerror = (error) => {
+        console.error("Script loading error:", error);
+        unityShowBanner('Ошибка загрузки скриптов игры', 'error');
+      };
+      
       document.body.appendChild(script);
+
+      // Обработчик изменения ориентации
+      window.addEventListener('orientationchange', function() {
+        setTimeout(function() {
+          // Обновляем размеры после изменения ориентации
+          canvas.style.width = '100%';
+          canvas.style.height = '100%';
+          
+          // Уведомляем Unity о изменении размеров
+          if (typeof unityInstance !== 'undefined') {
+            unityInstance.SetFullscreen(0);
+            setTimeout(() => {
+              unityInstance.SetFullscreen(0);
+            }, 100);
+          }
+        }, 300);
+      });
     </script>
   </body>
 </html>
